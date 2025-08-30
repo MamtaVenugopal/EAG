@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheet Viewer + Gemini AI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="jspdf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-brain"></i> Sheet Viewer + Gemini</h1>
+            <p>Extract & Process with AI</p>
+        </header>
+
+        <!-- Configuration Panel -->
+        <div class="config-panel">
+            <h2><i class="fas fa-cog"></i> Configuration</h2>
+            
+            <!-- Google Sheets Configuration -->
+            <div class="config-section">
+                <h3>📊 Google Sheets</h3>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="sheetsApiKey">Google Sheets API Key:</label>
+                        <input type="password" id="sheetsApiKey" placeholder="Enter Google Sheets API key">
+                        <button id="toggleSheetsKey" class="toggle-btn">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="config-item">
+                        <label for="sheetId">Sheet ID:</label>
+                        <input type="password" id="sheetId" placeholder="Enter sheet ID">
+                        <button id="toggleSheetId" class="toggle-btn">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="config-item">
+                        <label for="sheetRange">Range:</label>
+                        <input type="text" id="sheetRange" placeholder="e.g., A1:I25" value="A1:I25">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gemini AI Configuration -->
+            <div class="config-section">
+                <h3>🤖 Google Gemini AI</h3>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="geminiApiKey">Gemini API Key:</label>
+                        <input type="password" id="geminiApiKey" placeholder="Enter Gemini API key">
+                        <button id="toggleGeminiKey" class="toggle-btn">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="config-item">
+                        <label for="prompt">AI Prompt:</label>
+                        <textarea id="prompt" placeholder="Enter your prompt for Gemini AI..." rows="3">Extract all the sports information from this Google Sheet data and return it in a structured JSON format. Include sports names, tryout dates, times, locations, coach emails, and Instagram accounts. Organize by seasons (Fall, Winter, Spring).</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="testConnectionBtn" class="secondary-btn">
+                    <i class="fas fa-plug"></i> Test Connection
+                </button>
+                <button id="extractProcessBtn" class="primary-btn">
+                    <i class="fas fa-magic"></i> Extract & Process
+                </button>
+            </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="status-panel" id="statusPanel">
+            <div class="status-content">
+                <i class="fas fa-info-circle"></i>
+                <span id="statusMessage">Ready to extract and process data</span>
+            </div>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section">
+            <div class="results-header">
+                <h2><i class="fas fa-file-code"></i> Results</h2>
+                <div class="results-actions">
+                    <button id="copyBtn" class="action-btn">
+                        <i class="fas fa-copy"></i> Copy JSON
+                    </button>
+                    <button id="downloadBtn" class="action-btn">
+                        <i class="fas fa-download"></i> Download JSON
+                    </button>
+                    <button id="downloadFallBtn" class="action-btn" style="display: inline-flex;">
+                        <i class="fas fa-file-pdf"></i> Fall Sports PDF
+                    </button>
+                    <button id="downloadWinterBtn" class="action-btn" style="display: inline-flex;">
+                        <i class="fas fa-file-pdf"></i> Winter Sports PDF
+                    </button>
+                    <button id="downloadSpringBtn" class="action-btn" style="display: inline-flex;">
+                        <i class="fas fa-file-pdf"></i> Spring Sports PDF
+                    </button>
+                    <button id="clearBtn" class="action-btn">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Tabs -->
+            <div class="results-tabs">
+                <button id="jsonTab" class="tab-btn active">JSON Output</button>
+                <button id="rawTab" class="tab-btn">Raw Data</button>
+            </div>
+
+            <!-- Results Content -->
+            <div class="results-content">
+                <div id="jsonContent" class="tab-content active">
+                    <pre id="jsonOutput" class="code-block">No data processed yet</pre>
+                </div>
+                <div id="rawContent" class="tab-content">
+                    <pre id="rawOutput" class="code-block">No raw data available</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
