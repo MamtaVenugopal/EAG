@@ -1,94 +1,168 @@
 # PDF to Google Calendar Extension - Architecture
 
-## System Block Diagram
+## High-Level Architecture: LLM → Chrome Extension → Tool → Google Calendar
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           HIGH-LEVEL FLOW                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐
+    │     LLM      │  (AI Assistant / Cursor / Development)
+    │              │  - Designs architecture
+    │              │  - Generates code
+    │              │  - Provides reasoning
+    └──────┬───────┘
+           │
+           │ (Code generation & guidance)
+           │
+    ┌──────▼──────────────────────────────────────────────────────────┐
+    │                    CHROME EXTENSION                             │
+    │  ┌──────────────────────────────────────────────────────────┐  │
+    │  │  User Interface (popup.html/popup.js)                     │  │
+    │  │  - File pickers for PDFs                                  │  │
+    │  │  - Google Sign-in button                                   │  │
+    │  │  - Merge & Add to Calendar button                          │  │
+    │  └──────────────────────────────────────────────────────────┘  │
+    │                                                                  │
+    │  ┌──────────────────────────────────────────────────────────┐  │
+    │  │  PDF Processing (PDF.js)                                  │  │
+    │  │  - Extract text from Data Science PDF                      │  │
+    │  │  - Extract text from Agentic AI PDF                      │  │
+    │  └──────────────────────────────────────────────────────────┘  │
+    │                                                                  │
+    │  ┌──────────────────────────────────────────────────────────┐  │
+    │  │  Event Parser                                             │  │
+    │  │  - Parse dates, titles, times from text                   │  │
+    │  │  - Structure as event objects                              │  │
+    │  └──────────────────────────────────────────────────────────┘  │
+    │                                                                  │
+    │  ┌──────────────────────────────────────────────────────────┐  │
+    │  │  Merger Module                                            │  │
+    │  │  - Combine Data Science + Agentic AI events               │  │
+    │  │  - Tag with source                                        │  │
+    │  │  - Sort chronologically                                   │  │
+    │  └──────────────────────────────────────────────────────────┘  │
+    └──────┬──────────────────────────────────────────────────────────┘
+           │
+           │ (Structured event data)
+           │
+    ┌──────▼──────────────────────────────────────────────────────────┐
+    │                         TOOL                                    │
+    │  ┌──────────────────────────────────────────────────────────┐  │
+    │  │  Google Calendar API Client                               │  │
+    │  │  - OAuth authentication (chrome.identity)                 │  │
+    │  │  - List existing events                                   │  │
+    │  │  - Delete old tagged events                               │  │
+    │  │  - Create new events                                       │  │
+    │  │  - Update calendar                                        │  │
+    │  └──────────────────────────────────────────────────────────┘  │
+    └──────┬──────────────────────────────────────────────────────────┘
+           │
+           │ (API calls with OAuth token)
+           │
+    ┌──────▼──────────────────────────────────────────────────────────┐
+    │                    GOOGLE CALENDAR                              │
+    │  ┌──────────────────────────────────────────────────────────┐  │
+    │  │  "Syllabus - Combined" Calendar                            │  │
+    │  │  - Data Science events (tagged)                            │  │
+    │  │  - Agentic AI events (tagged)                              │  │
+    │  │  - Synced across devices                                   │  │
+    │  └──────────────────────────────────────────────────────────┘  │
+    └──────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CONNECTION FLOW                                 │
+└─────────────────────────────────────────────────────────────────────────┘
+
+LLM (Design & Code)
+    │
+    ├─► Chrome Extension (User Interface + Processing)
+    │       │
+    │       ├─► PDF.js (Extract text)
+    │       ├─► Event Parser (Structure data)
+    │       └─► Merger (Combine & tag)
+    │
+    └─► Tool (Google Calendar API Client)
+            │
+            ├─► OAuth (Authentication)
+            ├─► API Calls (Create/Update events)
+            └─► Google Calendar (Final destination)
+
+```
+
+## System Block Diagram (Simplified for GitHub)
+
+### Visual Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         USER ACTIONS                                │
+│  [Select Data Science PDF]  [Select Agentic AI PDF]                │
+│  [Sign in with Google]  [Merge & Add to Calendar]                   │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CHROME EXTENSION                                 │
+│  ┌──────────────────┐  ┌──────────────────┐                      │
+│  │  PDF.js Parser 1  │  │  PDF.js Parser 2  │                      │
+│  │  (Data Science)  │  │  (Agentic AI)      │                      │
+│  └────────┬─────────┘  └────────┬─────────┘                      │
+│           │                      │                                 │
+│           ▼                      ▼                                 │
+│  ┌─────────────────────────────────────┐                          │
+│  │      Event Parser                    │                          │
+│  │  (Extract dates, titles, times)     │                          │
+│  └──────────────┬──────────────────────┘                          │
+│                 │                                                   │
+│                 ▼                                                   │
+│  ┌─────────────────────────────────────┐                          │
+│  │      Merger Module                   │                          │
+│  │  (Combine, tag, sort events)        │                          │
+│  └──────────────┬──────────────────────┘                          │
+└─────────────────┼──────────────────────────────────────────────────┘
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TOOL: Google Calendar API                        │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  OAuth (chrome.identity.getAuthToken)                        │  │
+│  └───────────────────────────┬──────────────────────────────────┘  │
+│                              │                                       │
+│  ┌───────────────────────────▼──────────────────────────────────┐  │
+│  │  API Client                                                  │  │
+│  │  • List events (GET)                                         │  │
+│  │  • Delete old events (DELETE)                               │  │
+│  │  • Create new events (POST)                                  │  │
+│  └───────────────────────────┬──────────────────────────────────┘  │
+└───────────────────────────────┼──────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    GOOGLE CALENDAR                                  │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │  "Syllabus - Combined" Calendar                               │  │
+│  │  • Data Science events                                        │  │
+│  │  • Agentic AI events                                          │  │
+│  │  • Tagged with [Syllabus Importer]                            │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Mermaid Diagram (Alternative)
 
 ```mermaid
-graph TB
-    subgraph "User Actions"
-        U1[User selects<br/>Data Science PDF]
-        U2[User selects<br/>Agentic AI PDF]
-        U3[User clicks<br/>Sign in with Google]
-        U4[User clicks<br/>Merge & Add to Calendar]
-    end
-
-    subgraph "Chrome Extension - Frontend"
-        UI[Extension Popup UI<br/>popup.html/popup.js]
-        FP1[File Picker 1<br/>PDF.js Reader]
-        FP2[File Picker 2<br/>PDF.js Reader]
-    end
-
-    subgraph "PDF Processing"
-        PDF1[PDF.js Parser<br/>Extract text from<br/>Data Science PDF]
-        PDF2[PDF.js Parser<br/>Extract text from<br/>Agentic AI PDF]
-        EP1[Event Parser 1<br/>Parse dates, titles, times<br/>from Data Science text]
-        EP2[Event Parser 2<br/>Parse dates, titles, times<br/>from Agentic AI text]
-    end
-
-    subgraph "Event Processing"
-        MERGE[Merger Module<br/>Combine both event lists<br/>Tag with source<br/>Sort by date]
-        EVENTS[Event List<br/>Array of events:<br/>date, title, time, source]
-    end
-
-    subgraph "Google Authentication"
-        OAUTH[Chrome Identity API<br/>chrome.identity.getAuthToken]
-        GOOGLE_AUTH[Google OAuth<br/>User signs in<br/>Grants calendar access]
-        TOKEN[Access Token<br/>Bearer token for API]
-    end
-
-    subgraph "Google Calendar API"
-        API_CLIENT[API Client<br/>HTTPS requests to<br/>calendar/v3/events]
-        LIST_EVENTS[List existing events<br/>in Syllabus calendar<br/>with tag]
-        CREATE_EVENT[Create new events<br/>POST /events]
-        UPDATE_EVENT[Update existing events<br/>PUT /events/{id}]
-        DELETE_EVENTS[Delete old events<br/>DELETE /events/{id}]
-    end
-
-    subgraph "Google Calendar"
-        CAL[User's Google Calendar<br/>Syllabus - Combined<br/>calendar]
-        EVENT1[Event 1<br/>Data Science: Live Class]
-        EVENT2[Event 2<br/>Agentic AI: Assignment]
-        EVENTN[Event N...]
-    end
-
-    %% User flow
-    U1 --> FP1
-    U2 --> FP2
-    FP1 --> PDF1
-    FP2 --> PDF2
-    PDF1 --> EP1
-    PDF2 --> EP2
-    EP1 --> MERGE
-    EP2 --> MERGE
-    MERGE --> EVENTS
-
-    %% Auth flow
-    U3 --> OAUTH
-    OAUTH --> GOOGLE_AUTH
-    GOOGLE_AUTH --> TOKEN
-
-    %% Calendar update flow
-    U4 --> API_CLIENT
-    TOKEN --> API_CLIENT
-    EVENTS --> API_CLIENT
-    API_CLIENT --> LIST_EVENTS
-    LIST_EVENTS --> DELETE_EVENTS
-    DELETE_EVENTS --> CREATE_EVENT
-    CREATE_EVENT --> CAL
-    UPDATE_EVENT --> CAL
-
-    %% Calendar structure
-    CAL --> EVENT1
-    CAL --> EVENT2
-    CAL --> EVENTN
-
-    style U1 fill:#e1f5ff
-    style U2 fill:#e1f5ff
-    style U3 fill:#e1f5ff
-    style U4 fill:#e1f5ff
-    style MERGE fill:#fff4e1
-    style EVENTS fill:#fff4e1
-    style TOKEN fill:#e8f5e9
-    style CAL fill:#f3e5f5
+graph LR
+    A[User selects PDFs] --> B[Chrome Extension]
+    B --> C[PDF.js Parser]
+    C --> D[Event Parser]
+    D --> E[Merger Module]
+    E --> F[Google Calendar API]
+    F --> G[Google Calendar]
+    
+    H[User signs in] --> I[OAuth Token]
+    I --> F
 ```
 
 ## Data Flow Diagram
