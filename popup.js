@@ -6,6 +6,20 @@
   const logSection = document.getElementById('log-section');
   const copyLogBtn = document.getElementById('copy-log-btn');
 
+  // Default date range: first day to last day of current month
+  (function setDefaultDates() {
+    const from = document.getElementById('from-date');
+    const to = document.getElementById('to-date');
+    if (from && !from.value) {
+      const now = new Date();
+      from.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    }
+    if (to && !to.value) {
+      const now = new Date();
+      to.value = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+    }
+  })();
+
   function setStatus(msg, type = '') {
     statusEl.textContent = msg;
     statusEl.className = type ? 'status ' + type : '';
@@ -33,9 +47,20 @@
   }
 
   exportBtn.addEventListener('click', async () => {
+    const fromDate = document.getElementById('from-date')?.value || '';
+    const toDate = document.getElementById('to-date')?.value || '';
+    if (!fromDate || !toDate) {
+      setStatus('Please select both From date and To date.', 'error');
+      return;
+    }
+    if (fromDate > toDate) {
+      setStatus('From date must be on or before To date.', 'error');
+      return;
+    }
+
     setStatus('Reading page...');
     exportBtn.disabled = true;
-    appendLog('Export started – scraping all syllabus by date.');
+    appendLog('Export started – syllabus from ' + fromDate + ' to ' + toDate + '.');
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -53,7 +78,7 @@
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: getAllSyllabusByDate,
-        args: []
+        args: [fromDate, toDate]
       });
 
       const payload = results?.[0]?.result;
@@ -69,30 +94,72 @@
       }
 
       if (!byDate || Object.keys(byDate).length === 0) {
-        const msg = 'No syllabus found. Run Debug to see page structure.';
+        const msg = 'No syllabus found in this date range. Try a wider range or run Debug.';
         setStatus(msg, 'error');
         appendLog(msg, true);
         return;
       }
 
-      // Build rows: one row per date; multiple syllabus on same date → same row, multiple columns
+      // Build rows: one row per syllabus item; Date as "15-Jan", Syllabus = item text only
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      function toShortDate(ymd) {
+        const [y, m, d] = ymd.split('-').map(Number);
+        return d + '-' + (monthNames[m - 1] || '');
+      }
+      function stripPercentages(s) {
+        return String(s || '')
+          .replace(/\d+,\d+\s*\d*%?/g, '')
+          .replace(/\d+\s*%/g, '')
+          .replace(/\d+%/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+      function splitIntoActivities(s) {
+        let raw = (s || '').trim();
+        if (!raw) return [];
+        const byStatus = raw.split(/\s+(?=(?:Completed on|Started on)\s+[A-Za-z]{3}\s+\d{1,2},?\s*\d{4})/i);
+        const segments = [];
+        for (let i = 0; i < byStatus.length; i++) {
+          let seg = byStatus[i].replace(/\s*(?:Completed on|Started on)\s+[A-Za-z]{3}\s+\d{1,2},?\s*\d{4}\s*$/i, '').trim();
+          if (seg) segments.push(seg);
+        }
+        if (segments.length >= 2) {
+          return segments.map(t => t.trim()).filter(t => t.length > 2);
+        }
+        const byNewline = raw.split(/\r\n|\n|\r/).map(t => t.trim()).filter(t => t.length > 2);
+        if (byNewline.length >= 2) return byNewline;
+        const byDoubleSpace = raw.split(/\s{2,}/).map(t => t.trim()).filter(t => t.length > 2);
+        if (byDoubleSpace.length >= 2) return byDoubleSpace;
+        return [raw];
+      }
+      const headerRow = ['Date', 'Syllabus'];
       const sortedDates = Object.keys(byDate).sort();
-      const maxCols = Math.max(...sortedDates.map(d => byDate[d].length), 1);
-      const headerRow = ['Date'].concat(Array.from({ length: maxCols }, (_, i) => 'Syllabus ' + (i + 1)));
-      const dataRows = sortedDates.map(date => {
-        const items = byDate[date];
-        const row = [date].concat(items);
-        while (row.length < headerRow.length) row.push('');
-        return row;
-      });
+      const dataRows = [];
+      for (const date of sortedDates) {
+        const dateLabel = toShortDate(date);
+        for (const syllabus of byDate[date]) {
+          const cleaned = stripPercentages(syllabus);
+          const parts = splitIntoActivities(cleaned);
+          for (const part of parts) {
+            const one = stripPercentages(part).trim();
+            if (one) dataRows.push([dateLabel, one]);
+          }
+        }
+      }
       const rows = [headerRow].concat(dataRows);
 
       const csv = rowsToCSV(rows);
       const dateRange = sortedDates.length ? sortedDates[0] + '_to_' + sortedDates[sortedDates.length - 1] : 'schedule';
       downloadCSV(csv, 'syllabus_' + dateRange + '.csv');
-      const totalItems = sortedDates.reduce((sum, d) => sum + byDate[d].length, 0);
-      setStatus('Exported ' + sortedDates.length + ' date(s), ' + totalItems + ' item(s) to Excel.', 'success');
-      appendLog('Exported ' + sortedDates.length + ' dates, ' + totalItems + ' syllabus items.');
+      const totalItems = dataRows.length;
+
+      // Save data for calendar and open calendar tab
+      const calendarData = { byDate, sortedDates, fromDate, toDate };
+      await chrome.storage.local.set({ syllabusCalendar: calendarData });
+      chrome.tabs.create({ url: chrome.runtime.getURL('calendar.html') });
+
+      setStatus('Exported ' + totalItems + ' item(s). CSV downloaded, calendar opened.', 'success');
+      appendLog('Exported ' + totalItems + ' items; calendar opened in new tab.');
     } catch (e) {
       const errMsg = e.message || String(e);
       setStatus('Error: ' + errMsg, 'error');
@@ -101,6 +168,13 @@
       exportBtn.disabled = false;
     }
   });
+
+  const calendarBtn = document.getElementById('calendar-btn');
+  if (calendarBtn) {
+    calendarBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL('calendar.html') });
+    });
+  }
 
   if (debugBtn) {
     debugBtn.addEventListener('click', async () => {
@@ -158,11 +232,10 @@
 
   function rowsToCSV(rows) {
     const escape = (cell) => {
-      const s = String(cell ?? '');
-      if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-      return s;
+      const s = String(cell ?? '').replace(/\r\n|\r|\n/g, ' ').trim();
+      return '"' + s.replace(/"/g, '""') + '"';
     };
-    return rows.map(row => row.map(escape).join(',')).join('\r\n');
+    return rows.map(row => row.map(escape).join('\t')).join('\r\n');
   }
 
   function downloadCSV(csv, filename) {
@@ -177,10 +250,19 @@
 })();
 
 // ---- Injected functions (run in page context via executeScript) ----
-// Scrapes ALL syllabus from the page, groups by date. Multiple items on same date → same row, multiple columns.
+// Scrapes syllabus from the page between fromDate and toDate (inclusive). One row per date; multiple items on same date → separate columns.
 
-function getAllSyllabusByDate() {
+function getAllSyllabusByDate(fromDate, toDate) {
   const debug = { url: location.href, title: document.title, totalItems: 0, datesCount: 0 };
+  const from = (fromDate && fromDate.slice(0, 10)) || '';
+  const to = (toDate && toDate.slice(0, 10)) || '';
+  function inRange(date) {
+    if (!date || date.length < 10) return false;
+    const d = date.slice(0, 10);
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+  }
 
   function text(el) {
     if (!el) return '';
@@ -216,16 +298,27 @@ function getAllSyllabusByDate() {
     return year + '-' + month + '-' + dayNum;
   }
 
-  // Collect all items as { date, syllabusText }; we'll group by date and dedupe
+  function stripPercentages(s) {
+    return String(s || '')
+      .replace(/\d+,\d+\s*\d*%?/g, '')
+      .replace(/\d+\s*%/g, '')
+      .replace(/\d+%/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   const items = [];
   const seenKeys = new Set();
 
   function addItem(date, syllabusText) {
     if (!date || !date.match(/^\d{4}-\d{2}-\d{2}$/)) return;
-    const key = date + '|' + (syllabusText || '').slice(0, 200);
+    if (!inRange(date)) return;
+    const cleaned = stripPercentages(syllabusText || '');
+    if (!cleaned) return;
+    const key = date + '|' + cleaned.slice(0, 200);
     if (seenKeys.has(key)) return;
     seenKeys.add(key);
-    items.push({ date: date.slice(0, 10), syllabus: (syllabusText || '').trim() });
+    items.push({ date: date.slice(0, 10), syllabus: cleaned });
   }
 
   // Strategy 1: Tables
@@ -251,19 +344,76 @@ function getAllSyllabusByDate() {
     }
   });
 
-  // Strategy 3: Interview Kickstart .schedule-activity-date-group – one item per ACTIVITY (leaf nodes only)
-  // Skip containers that have another .schedule-activity-date-group inside (they would concatenate all children)
-  document.querySelectorAll('.schedule-activity-date-group').forEach(el => {
-    if (el.querySelector('.schedule-activity-date-group')) return; // container, not a single activity
-    const fullText = text(el);
-    const dateMatch = fullText.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
-    if (dateMatch) {
-      const parsedDate = parseIKDate(dateMatch[0]);
-      if (parsedDate) {
-        const rest = fullText.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*/i, '').trim();
-        addItem(parsedDate, rest);
+  // Split one blob into multiple activities – works for ALL dates (status lines, action phrases, newlines)
+  function splitActivities(blob) {
+    const raw = blob.replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*/i, '').trim();
+    if (!raw) return [];
+
+    const statusRegex = /\s+(?=(?:Completed on|Started on|COMPLETED ON|STARTED ON)\s+[A-Za-z]{3}\s+\d{1,2},?\s*\d{4})/i;
+    const actionRegex = /\s+(?=Watch the|Attend the|Complete the|Review Alternative|Review the|Join |Give us |Orientation\s|Class Feedback|Live\s|Practice|Timed Test|Foundation Material)/i;
+
+    let parts = raw.split(statusRegex);
+    if (parts.length < 2) parts = raw.split(actionRegex);
+    if (parts.length < 2) {
+      parts = raw.split(/\s+(?=[A-Z][A-Z\s&-]{10,}[:-])/);
+    }
+    const out = [];
+    for (let i = 0; i < parts.length; i++) {
+      let seg = parts[i].replace(/\s*(?:Completed on|Started on|COMPLETED ON|STARTED ON)\s+[A-Za-z]{3}\s+\d{1,2},?\s*\d{4}\s*$/i, '').trim();
+      if (!seg || seg.length < 3) continue;
+      const byNewline = seg.split(/\r\n|\n|\r/).map(s => s.trim()).filter(s => s.length > 2);
+      if (byNewline.length >= 2) {
+        byNewline.forEach(s => { if (s) out.push(s); });
+      } else {
+        const bySpace = seg.split(/\s{2,}/).map(s => s.trim()).filter(s => s.length > 2);
+        if (bySpace.length >= 2) bySpace.forEach(s => { if (s) out.push(s); });
+        else out.push(seg);
       }
     }
+    return out.length ? out : [raw];
+  }
+
+  // Strategy 3: Interview Kickstart .schedule-activity-date-group – one item per ACTIVITY
+  document.querySelectorAll('.schedule-activity-date-group').forEach(el => {
+    const fullText = text(el);
+    const dateMatch = fullText.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+    if (!dateMatch) return;
+    const parsedDate = parseIKDate(dateMatch[0]);
+    if (!parsedDate) return;
+
+    const nested = el.querySelectorAll(':scope > .schedule-activity-date-group');
+    if (nested.length > 0) {
+      nested.forEach(child => {
+        const t = text(child).replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s*/i, '').trim();
+        if (t) splitActivities(t).forEach(activity => addItem(parsedDate, activity));
+      });
+      return;
+    }
+
+    const links = el.querySelectorAll('a[href]');
+    if (links.length >= 2) {
+      links.forEach(a => {
+        const t = text(a).trim();
+        if (t.length > 5 && !/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(t)) {
+          addItem(parsedDate, t);
+        }
+      });
+      return;
+    }
+
+    const directChildren = el.querySelectorAll(':scope > *');
+    const childTexts = Array.from(directChildren).map(c => text(c).trim()).filter(t => t.length > 5);
+    if (childTexts.length >= 2) {
+      childTexts.forEach(t => {
+        if (!/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\d{1,2}(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(t)) {
+          splitActivities(t).forEach(activity => addItem(parsedDate, activity));
+        }
+      });
+      return;
+    }
+
+    const parts = splitActivities(fullText);
+    parts.forEach(activity => addItem(parsedDate, activity));
   });
 
   // Group by date: { 'YYYY-MM-DD': ['syllabus1', 'syllabus2'], ... }

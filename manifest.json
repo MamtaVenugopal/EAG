@@ -3,7 +3,10 @@
   "name": "Syllabus to Excel",
   "version": "1.0.0",
   "description": "Select a date and export classes/syllabus for that date to Excel",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "storage", "downloads"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "Export Syllabus to Excel"

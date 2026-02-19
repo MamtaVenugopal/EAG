@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Syllabus Calendar</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px 0;
+      color: #0f766e;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+    .calendar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .day-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      border: 1px solid #e2e8f0;
+      min-width: 280px;
+      max-width: 360px;
+      overflow: hidden;
+    }
+    .day-header {
+      background: #0f766e;
+      color: white;
+      padding: 12px 16px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .day-header .weekday {
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .day-items {
+      padding: 12px 16px;
+    }
+    .day-items .item {
+      font-size: 13px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+      line-height: 1.4;
+      color: #334155;
+    }
+    .day-items .item:last-child { border-bottom: none; }
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #64748b;
+    }
+    .empty-state p { margin: 0 0 8px 0; }
+    .toolbar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .toolbar button {
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .toolbar .download-btn { background: #0f766e; color: white; }
+    .toolbar .download-btn:hover { background: #0d9488; }
+    .toolbar .csv-btn { background: #059669; color: white; }
+    .toolbar .csv-btn:hover { background: #10b981; }
+    .toolbar .print-btn { background: #475569; color: white; }
+    .toolbar .print-btn:hover { background: #64748b; }
+    @media print {
+      .toolbar { display: none !important; }
+      body { background: #fff; }
+      .day-card { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Syllabus Calendar</h1>
+  <p class="subtitle" id="range-label">Loading…</p>
+  <p class="subtitle" style="margin: -8px 0 12px 0; font-size: 11px;">To get data: click the <strong>Syllabus to Excel</strong> icon (toolbar) → set dates → <strong>Export to Excel</strong>. This tab shows the calendar; use the buttons below to download.</p>
+  <div class="toolbar" id="toolbar" style="display: none;">
+    <button type="button" class="download-btn" id="download-btn">Download calendar (HTML)</button>
+    <button type="button" class="csv-btn" id="csv-btn">Export CSV</button>
+    <button type="button" class="print-btn" id="print-btn">Print / Save as PDF</button>
+  </div>
+  <div id="calendar" class="calendar"></div>
+  <div id="empty" class="empty-state" style="display: none;">
+    <p>No syllabus data in this range.</p>
+    <p>Use the extension on the schedule page and export to Excel to see the calendar here.</p>
+  </div>
+  <p class="subtitle" style="margin-top: 24px; font-size: 11px; color: #94a3b8;">Extension popup (click puzzle icon → Syllabus to Excel) has <strong>Export to Excel</strong> and <strong>View calendar</strong>. This page is the calendar; use the green buttons above to download HTML or CSV.</p>
+  <script src="calendar.js"></script>
+</body>
+</html>

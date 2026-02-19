@@ -78,11 +78,16 @@
 </head>
 <body>
   <h2>📅 Syllabus to Excel</h2>
-  <p class="hint">Scrapes all syllabus from the page. Multiple items on the same date appear in the same row.</p>
+  <p class="hint">Export syllabus between two dates. One row per item; Date like 15-Jan, Syllabus = item text.</p>
+  <label for="from-date">From date</label>
+  <input type="date" id="from-date" />
+  <label for="to-date">To date</label>
+  <input type="date" id="to-date" />
   <div class="btn-row">
     <button id="export-btn">Export to Excel</button>
     <button id="debug-btn">Debug page</button>
   </div>
+  <button id="calendar-btn" style="margin-top: 8px; background: #0d9488;">View calendar</button>
   <div id="status"></div>
   <div id="log-section" class="hidden">
     <div id="log-header">Log / Debug <button id="copy-log-btn">Copy log</button></div>

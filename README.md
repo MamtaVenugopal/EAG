@@ -13,9 +13,12 @@ Select a date on any syllabus/schedule webpage and export the classes and syllab
 
 1. Open the website that shows classes and syllabus (e.g. [Interview Kickstart schedule](https://uplevel.interviewkickstart.com/schedule/) – **sign in first** so the schedule is visible).
 2. Click the extension icon in the toolbar.
-3. Click **Export to Excel**.
-4. The extension **scrapes all syllabus** from the page and downloads a CSV.
-5. **One row per date.** If a date has multiple syllabus items (e.g. two classes on the same day), they appear in the **same row** in multiple columns: **Date** | **Syllabus 1** | **Syllabus 2** | …
+3. Choose **From date** and **To date** (only syllabus between these two dates is exported).
+4. Click **Export to Excel**.
+5. The extension scrapes the page and downloads a CSV with syllabus in that date range.
+6. **One row per date.** Multiple items on the same date appear in **separate columns**: **Date** | **Syllabus 1** | **Syllabus 2** | …
+
+7. A **calendar** opens in a new tab showing the same syllabus by date (day cards with items). You can open it again anytime with **View calendar**.
 
 Open the CSV in Excel or Google Sheets.
 
