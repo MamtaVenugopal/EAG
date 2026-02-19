@@ -1,5 +1,9 @@
 # Agentic AI Chrome Extension
 
+## Extension UI
+
+![Agentic AI Assistant – popup with API key, query input, Submit Query, file ready for download, and conversation log](extension-popup.png)
+
 ## Project Overview
 
 This Chrome Extension demonstrates an **Agentic AI** system that uses OpenAI's GPT-4o-mini with function calling to perform complex multi-step tasks. The extension follows the agentic loop pattern:
