@@ -1,76 +1,26 @@
-# Syllabus to Excel – Chrome Extension
+# TSAI EAG – Course & Project
 
-Select a date on any syllabus/schedule webpage and export the classes and syllabus for that date to an Excel-friendly file (CSV).
+## Course: TSAI EAG
 
-## How to install
+Short description of the **TSAI EAG** course and the capstone project completed as part of it.
 
-1. Open Chrome and go to `chrome://extensions/`.
-2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and choose the `Chrome_Extension` folder (this folder).
-4. The extension icon will appear in the toolbar.
+---
 
-## How to use
+## Project: Syllabus to Excel (Chrome Extension)
 
-1. Open the website that shows classes and syllabus (e.g. [Interview Kickstart schedule](https://uplevel.interviewkickstart.com/schedule/) – **sign in first** so the schedule is visible).
-2. Click the extension icon in the toolbar.
-3. Choose **From date** and **To date** (only syllabus between these two dates is exported).
-4. Click **Export to Excel**.
-5. The extension scrapes the page and downloads a CSV with syllabus in that date range.
-6. **One row per date.** Multiple items on the same date appear in **separate columns**: **Date** | **Syllabus 1** | **Syllabus 2** | …
+A Chrome extension that helps extract and export **syllabus and schedule** data from a learning portal (e.g. Interview Kickstart schedule page) into **Excel-friendly CSV** and a **downloadable calendar view**.
 
-7. A **calendar** opens in a new tab showing the same syllabus by date (day cards with items). You can open it again anytime with **View calendar**.
+### What was built
 
-Open the CSV in Excel or Google Sheets.
+- **Date-range export**: Choose “From” and “To” dates and export only the syllabus in that range.
+- **CSV export**: One row per activity; columns are Date (e.g. 15-Jan) and Syllabus. File is tab-separated so it opens correctly in Excel.
+- **Calendar view**: After export, a calendar opens in a new tab showing the same data by date. Users can download the calendar as HTML or export the same data as CSV from that page.
+- **Activity-level data**: Logic to split combined blocks into one row per activity and to strip percentages/numbers from the syllabus text for cleaner output.
 
-### If nothing is exported
+### Tech
 
-- Click **Debug page** in the popup to see how the page was read (tables, date elements, sample text).
-- Copy the log (**Copy log** button) to inspect or share. Ensure you are **signed in** and the schedule is visible.
+- Chrome Extension (Manifest V3), JavaScript, HTML/CSS. Uses Chrome APIs: `scripting`, `storage`, `downloads`, `activeTab`.
 
-## What the extension looks for on the page
+---
 
-It tries to find syllabus data in several ways:
-
-- **Tables** – Rows where the first column looks like a date matching your selected date; it uses the next columns as class/subject and syllabus/topics.
-- **Sections by date** – Headings or elements that contain the selected date, and the content that follows them.
-- **Data attributes** – Elements with `data-date` matching the selected date.
-
-If your site uses a different layout, you can customize the extraction logic (see below).
-
-## Customizing for your website
-
-The extraction logic is in **popup.js**, in the function `getSyllabusForDate`. You can edit it to match your site’s HTML:
-
-- Use your page’s CSS selectors (e.g. `document.querySelectorAll('.schedule-row')`).
-- Build the `rows` array so each row is `[date, classOrSubject, syllabusOrTopics]`.
-- The first row should be the header: `['Date', 'Class / Subject', 'Syllabus / Topics']`.
-
-Example for a custom table:
-
-```javascript
-// Example: table with class .my-schedule, columns Date | Subject | Topics
-const customRows = [];
-document.querySelectorAll('.my-schedule tbody tr').forEach(tr => {
-  const cells = tr.querySelectorAll('td');
-  if (cells.length >= 3 && normalizeDateStr(text(cells[0])).slice(0, 10) === selected) {
-    customRows.push([selected, text(cells[1]), text(cells[2])]);
-  }
-});
-rows.push(...customRows);
-```
-
-## File format
-
-The export is **CSV** (UTF-8 with BOM) so that:
-
-- Excel opens it with the correct encoding.
-- You get columns: **Date**, **Class / Subject**, **Syllabus / Topics**.
-
-You can open the CSV in Excel, Google Sheets, or any spreadsheet app.
-
-## Permissions
-
-- **activeTab** – To run only on the current tab when you click the extension.
-- **scripting** – To run the extraction script on the page and read the syllabus content.
-
-No data is sent to any server; everything runs locally in your browser.
+*Completed as part of the TSAI EAG course.*
