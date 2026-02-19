@@ -19,7 +19,11 @@ A Chrome extension that helps extract and export **syllabus and schedule** data 
 
 ### Example: Calendar page
 
-The **calendar page** shows the exported syllabus as a visual calendar: one card per date, with all activities for that date listed inside the card. Each card has a header (e.g. **Thu**, **15-Jan**) and the syllabus items for that day below. From this page you can:
+The **calendar page** shows the exported syllabus as a visual calendar: one card per date, with all activities for that date listed inside the card. Each card has a header (e.g. **Thu**, **15-Jan**) and the syllabus items for that day below.
+
+![Calendar view – syllabus by date (Jan–Feb 2026)](calendar-example.png)
+
+From this page you can:
 
 - **Download calendar (HTML)** – save the calendar as a standalone HTML file.
 - **Export CSV** – download the same data in CSV format (Date, Syllabus, one row per activity).
