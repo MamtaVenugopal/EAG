@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      width: 500px;
+      padding: 16px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      background: #f8fafc;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 12px 0;
+      color: #0f766e;
+    }
+    .api-key-section {
+      margin-bottom: 12px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .api-key-section label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    .api-key-section input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .input-section {
+      margin-bottom: 12px;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0f766e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    button:hover { background: #0d9488; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    #status {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 8px;
+      min-height: 18px;
+    }
+    #status.error { color: #dc2626; }
+    #status.success { color: #059669; }
+    #log-section {
+      margin-top: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      max-height: 300px;
+      display: flex;
+      flex-direction: column;
+    }
+    #log-header {
+      padding: 8px 12px;
+      background: #f1f5f9;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #log-area {
+      padding: 12px;
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      background: #fff;
+      overflow-y: auto;
+      max-height: 250px;
+    }
+    .log-entry {
+      margin-bottom: 12px;
+      padding: 8px;
+      border-left: 3px solid #e2e8f0;
+      background: #fafafa;
+    }
+    .log-entry.user { border-color: #0f766e; }
+    .log-entry.assistant { border-color: #3b82f6; }
+    .log-entry.tool { border-color: #10b981; }
+    .log-entry.error { border-color: #dc2626; }
+    .log-label {
+      font-weight: 600;
+      font-size: 10px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      color: #64748b;
+    }
+    .log-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 11px;
+      color: #334155;
+    }
+    #clear-btn {
+      padding: 4px 8px;
+      font-size: 10px;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 Agentic AI Assistant</h1>
+  
+  <div class="api-key-section">
+    <label for="api-key">OpenAI API Key</label>
+    <input type="password" id="api-key" placeholder="Enter your OpenAI API key" />
+  </div>
+
+  <div class="input-section">
+    <textarea id="user-input" placeholder="Example: Fetch users from https://jsonplaceholder.typicode.com/users, filter by id > 5, and export to Excel"></textarea>
+  </div>
+
+  <button id="submit-btn">Submit Query</button>
+  <div id="status"></div>
+  
+  <div id="download-section" style="display: none; margin-top: 12px; padding: 10px; background: #ecfdf5; border-radius: 8px; border: 1px solid #10b981;">
+    <div style="font-size: 12px; color: #059669; margin-bottom: 8px; font-weight: 600;">📥 File Ready for Download</div>
+    <div id="download-info" style="font-size: 11px; color: #047857; margin-bottom: 8px;"></div>
+    <button id="download-btn" style="width: 100%; padding: 8px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;">Download File</button>
+  </div>
+
+  <div id="log-section">
+    <div id="log-header">
+      Conversation Log <button id="clear-btn">Clear</button>
+    </div>
+    <div id="log-area"></div>
+  </div>
+
+  <script src="tools.js"></script>
+  <script src="llm.js"></script>
+  <script src="agent.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
